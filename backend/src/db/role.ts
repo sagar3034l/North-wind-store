@@ -1,4 +1,4 @@
-import type { UserRole } from "./schema";
+import type { UserRole } from "./schema.js";
 
 const VALID: readonly UserRole[] = ["customer","support","admin"];
 
