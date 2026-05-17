@@ -3,7 +3,11 @@ import cors from 'cors'
 import { clerkMiddleware } from '@clerk/express';
 import { clerkWebhookHandler } from './webhooks/clerk.js';
 import { getEnv } from './lib/env.js';
+
+import productRouter from "./routes/productRouter.js"
+import meRouter from "./routes/meRouter.js"
 import fs from "node:fs"
+import streamRouter from "./routes/streamRouter.js"
 
 import "dotenv/config"
 import path from 'node:path';
@@ -27,6 +31,9 @@ app.use(clerkMiddleware())
 
 const publicDir = path.join(process.cwd(),"public")
 
+app.use("/api/me",meRouter);
+app.use("/api/products",productRouter);
+app.use("/api/stream",streamRouter)
 
 if(fs.existsSync(publicDir)){
      app.use(express.static(publicDir))
@@ -39,6 +46,9 @@ if(fs.existsSync(publicDir)){
           res.sendFile(path.join(publicDir,"index.html"),(err)=>next(err))
      })
 }
+// todo add error handler middlware
+
+
 
 app.listen(env.PORT,()=>{
      console.log("Server is listening on",env.PORT)

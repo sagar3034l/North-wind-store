@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/react'
 
 function App() {
