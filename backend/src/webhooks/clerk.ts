@@ -43,16 +43,15 @@ export async function clerkWebhookHandler(req:Request,res:Response) {
                 set: {email,displayName,role,updatedAt: new Date()}
             })
         }
-
-        if(evt.type === "user.deleted"){
+        else if(evt.type === "user.deleted"){
             const id = evt.data.id
 
             if(id){
                 await db.delete(users).where(eq(users.clerkUserid,id))
             }
-
-            res.json({ok: true})
         }
+
+        res.json({ok: true})
     } catch (error) {
         console.error("Error handling Clerk webhook:", error);
         res.status(500).json({ error: "Internal server error" });

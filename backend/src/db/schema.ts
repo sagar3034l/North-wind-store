@@ -36,15 +36,17 @@ export const products = pgTable("products", {
 });
 
 
-export const checkoutSessions = pgTable("checkoutSessions",{
-  id:uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("id").notNull().references(()=> users.id ,{onDelete: "cascade"}),
+export const checkoutSessions = pgTable("checkout_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   polarCheckoutId: text("polar_checkout_id").unique(),
   lines: jsonb("lines").$type<CheckoutSessionLine[]>().notNull(),
-  totalCents: text("total_cents").notNull(),
+  totalCents: integer("total_cents").notNull(),
   currency: text("currency").notNull(),
-  createdAt: timestamp("created_at",{withTimezone: true}).defaultNow().notNull()
-})
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
 
 export const orders = pgTable("orders",{
   id: uuid("id").defaultRandom().primaryKey(),
