@@ -29,8 +29,8 @@ export const products = pgTable("products", {
   description: text("description").notNull().default(""),
   priceCents: integer("priceCents").notNull(),
   currency: text("currency").notNull().default("INR"),
-  imageUrl: text("image_url").notNull(),
-  imageKitField: text("image_Kit_file_id"),
+  imageUrl: text("image_url"),
+  imageKitFileId: text("image_Kit_file_id"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at",{withTimezone: true}).defaultNow().notNull(),
 });

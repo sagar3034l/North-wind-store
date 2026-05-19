@@ -1,7 +1,14 @@
 import {z} from 'zod'
 
+const nodeEnvSchema = z.enum(["development","production","test"])
+
 const envSchema = z.object({
-    NODE_ENV :z.enum(["developement","production","test"]).default("developement"),
+    NODE_ENV : z.preprocess((value) => {
+        if (typeof value !== "string") return value
+
+        const normalized = value.trim().toLowerCase()
+        return normalized === "developement" ? "development" : normalized
+    }, nodeEnvSchema).default("development"),
     PORT: z.string().default("3000"),
     DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
     

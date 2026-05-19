@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors'
 import { clerkMiddleware } from '@clerk/express';
 import { clerkWebhookHandler } from './webhooks/clerk.js';
@@ -9,10 +9,12 @@ import meRouter from "./routes/meRouter.js"
 import fs from "node:fs"
 import streamRouter from "./routes/streamRouter.js"
 import checkOutRouter from "./routes/checkOutRouter.js"
-
 import "dotenv/config"
 import path from 'node:path';
+import * as Sentry from "@sentry/node";
 import { polarWebhookHandler } from './webhooks/polar.js';
+import { sentryClerkUserMiddleware } from './middleware/sentryClerkUser.js';
+import adminRouter from "./routes/adminRouter.js"
 
 const app = express();
 
@@ -35,6 +37,8 @@ app.use(cors());
 
 app.use(clerkMiddleware())
 
+app.use(sentryClerkUserMiddleware)
+
 
 const publicDir = path.join(process.cwd(),"public")
 
@@ -42,6 +46,7 @@ app.use("/api/me",meRouter);
 app.use("/api/products",productRouter);
 app.use("/api/stream",streamRouter)
 app.use("/api/checkout",checkOutRouter)
+app.use("/api/admin",adminRouter)
 
 if(fs.existsSync(publicDir)){
      app.use(express.static(publicDir))
@@ -56,7 +61,16 @@ if(fs.existsSync(publicDir)){
 }
 // todo add error handler middlware
 
+Sentry.setupExpressErrorHandler(app);
 
+app.use((_err:unknown,_req:Request,res:Response,_next:NextFunction)=>{
+     const sentryId = (res as express.Response & {sentry?:string}).sentry
+
+     res.status(500).json({
+          error: "Internal server error",
+          ...(sentryId !== undefined && {sentryId})
+     })
+})
 
 app.listen(env.PORT,()=>{
      console.log("Server is listening on",env.PORT)
