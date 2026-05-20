@@ -9,6 +9,7 @@ import meRouter from "./routes/meRouter.js"
 import fs from "node:fs"
 import streamRouter from "./routes/streamRouter.js"
 import checkOutRouter from "./routes/checkOutRouter.js"
+import orderRoutes from "./routes/orderRouter.js"
 import "dotenv/config"
 import path from 'node:path';
 import * as Sentry from "@sentry/node";
@@ -47,6 +48,7 @@ app.use("/api/products",productRouter);
 app.use("/api/stream",streamRouter)
 app.use("/api/checkout",checkOutRouter)
 app.use("/api/admin",adminRouter)
+app.use("/api/orders",orderRoutes)
 
 if(fs.existsSync(publicDir)){
      app.use(express.static(publicDir))
