@@ -48,8 +48,8 @@ async function fulfillCheckoutSession(
       .select()
       .from(checkoutSessions)
       .where(eq(checkoutSessions.id, sessionId))
-      .for("update");
-
+      .for("update");  
+ 
     if (!session) return false;
 
     const [order] = await tx
