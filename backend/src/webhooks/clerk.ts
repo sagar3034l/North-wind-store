@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { getEnv } from "../lib/env.js";
 import {verifyWebhook} from '@clerk/backend/webhooks'
 import { parseRole } from "../db/role.js";

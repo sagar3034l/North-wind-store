@@ -1,4 +1,6 @@
-import express, { NextFunction, Request, Response } from 'express';
+import "dotenv/config"
+import express from 'express';
+import type { NextFunction, Request, Response } from "express";
 import cors from 'cors'
 import { clerkMiddleware } from '@clerk/express';
 import { clerkWebhookHandler } from './webhooks/clerk.js';
@@ -10,7 +12,6 @@ import fs from "node:fs"
 import streamRouter from "./routes/streamRouter.js"
 import checkOutRouter from "./routes/checkOutRouter.js"
 import orderRoutes from "./routes/orderRouter.js"
-import "dotenv/config"
 import path from 'node:path';
 import * as Sentry from "@sentry/node";
 import { polarWebhookHandler } from './webhooks/polar.js';
@@ -34,7 +35,10 @@ app.post("/webhooks/polar",rawJson,(req,res)=>{
 
 app.use(express.json());
 
-app.use(cors());
+app.use(cors({
+     origin: "http://localhost:5173",
+     credentials: true
+}));
 
 app.use(clerkMiddleware())
 

@@ -43,16 +43,16 @@ Sentry.init({
 })
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ClerkProvider>
-          <SentryUserSync />
+ <StrictMode>
+    <ClerkProvider>
+      <SentryUserSync />
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
           <Sentry.ErrorBoundary fallback={<SentryErrorFallback />}>
             <App />
           </Sentry.ErrorBoundary>
-        </ClerkProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ClerkProvider>
   </StrictMode>,
 )
