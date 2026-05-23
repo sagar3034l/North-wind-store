@@ -1,12 +1,12 @@
-import { Show, SignIn, SignInButton, SignOutButton, useAuth, UserButton } from '@clerk/react'
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { Show, SignInButton, useAuth, UserButton } from '@clerk/react'
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api';
 import { LogInIcon, PackageIcon, SettingsIcon, ShoppingBagIcon, ShoppingCartIcon, StoreIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import { userCart } from '../store/cart';
 
 const Navbar = () => {
- const {isLoaded,isSignedIn,getToken} = useAuth();
+ const {isSignedIn,getToken} = useAuth();
 
   const {data:meData} = useQuery({
     queryKey:["me"],

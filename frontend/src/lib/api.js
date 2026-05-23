@@ -38,7 +38,17 @@ export async function apiFetch(path, opts = {}) {
     throw e;
   }
 
-  const data = await res.json();
+  const contentType = res.headers.get("content-type") ?? "";
+  const raw = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    const preview = raw.slice(0, 160).replace(/\s+/g, " ").trim();
+    throw new Error(
+      `Expected JSON from ${method} ${path}, but received ${contentType || "an unknown content type"}${preview ? `: ${preview}` : ""}`,
+    );
+  }
+
+  const data = raw ? JSON.parse(raw) : null;
 
   Sentry.addBreadcrumb({
     category: "api",

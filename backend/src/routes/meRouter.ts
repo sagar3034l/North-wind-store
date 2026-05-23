@@ -6,8 +6,7 @@ const router = Router();
 
 router.get("/",async(req,res,next)=>{
     try {
-        const {userId,isAuthenticated} = getAuth(req);
-        console.log(userId,isAuthenticated)    
+        const {userId,isAuthenticated} = getAuth(req);    
         if(!isAuthenticated || !userId){
             res.status(401).json({error:"Unauthorized"})
             return;

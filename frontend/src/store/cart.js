@@ -14,6 +14,7 @@ persist(
         }else{
             items.push({productId, quantity: qty})
         }
+        set({items})
     },
 
     removeItem(productId){
@@ -37,4 +38,6 @@ persist(
 
 
 })),{name:"Velvora-cart"})
+
+export const useCart = userCart;
 
