@@ -24,12 +24,6 @@ export async function polarCreateCheckout(env: Env, body: CheckoutCreateBody) {
     throw new Error("POLAR_ACCESS_TOKEN is not configured");
   }
 
-  console.log({
-    api: env.POLAR_API_BASE,
-    tokenStart: token.slice(0, 15),
-    productId: body.products[0],
-  });
-
   const res = await fetch(`${env.POLAR_API_BASE}/v1/checkouts/`, {
     method: "POST",
     headers: {

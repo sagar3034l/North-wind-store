@@ -82,14 +82,20 @@ async function fulfillCheckoutSession(
 
 
 export async function polarWebhookHandler(req:Request,res:Response) {
-    const env = getEnv();
+    console.log("========== WEBHOOK HIT ==========");
+    console.log("HEADERS:", req.headers);
+    console.log("BODY IS BUFFER:", Buffer.isBuffer(req.body));
 
+    const env = getEnv();
+    console.log(env.POLAR_WEBHOOK_SECRET)
     try {
         if(!env.POLAR_WEBHOOK_SECRET){
             res.status(503).send("Polar webhooks not configured")
             return;
         }
+
         const rawData = req.body instanceof Buffer ? req.body : Buffer.from(String(req.body))
+        console.log("hello")
         const wh = new Webhook(env.POLAR_WEBHOOK_SECRET);
         
         const id = headerString(req.headers,"webhook-id");
@@ -107,6 +113,8 @@ export async function polarWebhookHandler(req:Request,res:Response) {
             type: String,
             data?: Record<string, unknown>
         }
+
+        console.log(JSON.stringify(event, null, 2));
         if(event.type === "order.paid" && event.data){
             const data = event.data;
             const polarOrderid = typeof data.id === "string" ? data.id: undefined;
@@ -118,6 +126,8 @@ export async function polarWebhookHandler(req:Request,res:Response) {
             }
 
             const sessionId = checkoutSessionIdFromMetadata(data)
+
+            
 
             if(sessionId){
                const ok = await fulfillCheckoutSession(sessionId,polarOrderid,checkoutId)
@@ -146,8 +156,12 @@ export async function polarWebhookHandler(req:Request,res:Response) {
 
         res.json({ok:true})
     } catch (error) {
-        console.error("Polar webhook failed:", error);
-        res.status(400).json({error:"Invalid webhook"})
+        console.error("POLAR WEBHOOK ERROR:");
+        console.error(error);
+
+     res.status(400).json({
+        error: String(error)
+      });
     }
 }
 
