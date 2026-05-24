@@ -1,61 +1,65 @@
 import type { Request, Response, NextFunction } from "express";
-import {getEnv} from '../lib/env.js'
-import z from "zod"
+import { getEnv } from "../lib/env.js";
+import z from "zod";
 import { getAuth } from "@clerk/express";
 import { getLocalUser } from "../db/user.js";
 import { db } from "../db/index.js";
 import { CheckoutSessionLine, checkoutSessions, products } from "../db/schema.js";
 import { and, eq, inArray } from "drizzle-orm";
-import {polarCreateCheckout } from "../lib/polar.js";
+import { polarCreateCheckout } from "../lib/polar.js";
 
 const env = getEnv();
+const MIN_CHECKOUT_AMOUNT_CENTS = 6000;
 
 const cartSchema = z.object({
-    items: z.array(
-        z.object({
-            productId: z.string().uuid(),
-            quantity: z.number().int().positive()
-        })
+  items: z
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      }),
     )
     .min(1),
-})
+});
 
-export async function createCheckOut(req:Request,res:Response,next:NextFunction) {
-   try {
-      const {isAuthenticated,userId} = getAuth(req)
-      if(!isAuthenticated || !userId){
-         res.status(401).json({error:"Unauthorized"})
-         return;
-      }
-      const parsed = cartSchema.safeParse(req.body)
-      if(!parsed.success){
-        res.status(400).json({error:"Invalid cart", details: parsed.error.flatten()})
-        return;
-      }
+export async function createCheckOut(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { isAuthenticated, userId } = getAuth(req);
+    if (!isAuthenticated || !userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
 
-      if(!env.POLAR_ACCESS_TOKEN){
-        res.status(503).json({error: "Payments are not configured"})
-        return;
-      }
+    const parsed = cartSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid cart", details: parsed.error.flatten() });
+      return;
+    }
 
-      const localUser = await getLocalUser(userId);
+    if (!env.POLAR_ACCESS_TOKEN) {
+      res.status(503).json({ error: "Payments are not configured" });
+      return;
+    }
 
-      if(!localUser){
-        res.status(503).json({error:"Account is not synced yet"})
-        return;
-      }
+    const localUser = await getLocalUser(userId);
 
-      const ids = parsed.data.items.map((i) => i.productId);
+    if (!localUser) {
+      res.status(503).json({ error: "Account is not synced yet" });
+      return;
+    }
 
-      const prodRows = await db
+    const ids = parsed.data.items.map((i) => i.productId);
+
+    const prodRows = await db
       .select()
       .from(products)
-      .where(and(inArray(products.id,ids), eq(products.active,true)));
+      .where(and(inArray(products.id, ids), eq(products.active, true)));
 
-      if(prodRows.length !== ids.length){
-        res.status(400).json({error:"One or more products are invalid"})
-        return;
-      }
+    if (prodRows.length !== ids.length) {
+      res.status(400).json({ error: "One or more products are invalid" });
+      return;
+    }
+
     const byId = new Map(prodRows.map((p) => [p.id, p]));
     let totalCents = 0;
     const lines: CheckoutSessionLine[] = [];
@@ -70,56 +74,60 @@ export async function createCheckOut(req:Request,res:Response,next:NextFunction)
       });
     }
 
-      if (totalCents < 100) {
-        res.status(400).json({
-          error: "Total below minimum amount (minimum ₹1 required)",
-        });
-        return;
-      }
+    if (totalCents < MIN_CHECKOUT_AMOUNT_CENTS) {
+      res.status(400).json({
+        error: "Cart total must be at least INR 60.00 to checkout.",
+      });
+      return;
+    }
 
-      const [session] = await db.insert(checkoutSessions).values({
-         userId: localUser.id,
-         lines,
-         totalCents,
-         currency: "INR"
+    const [session] = await db
+      .insert(checkoutSessions)
+      .values({
+        userId: localUser.id,
+        lines,
+        totalCents,
+        currency: "INR",
       })
       .returning();
 
-      const successUrl = `${env.FRONTEND_URL}/checkout/return?checkout_id={CHECKOUT_ID}`
-      const returnUrl = `${env.FRONTEND_URL}/cart`;
-      
-      let checkout;
-      try {
-        checkout = await polarCreateCheckout(env, {
-          products: [env.POLAR_CHECKOUT_PRODUCT_ID],
-          prices: {
-            [env.POLAR_CHECKOUT_PRODUCT_ID]:[
-              {
-                amount_type: "fixed",
-                price_currency: "inr",
-                price_amount: totalCents
-              }
-            ]
-          },
-          success_url: successUrl,
-          return_url: returnUrl,
-          external_customer_id: userId,
-          metadata: {checkout_session_id: session.id}
-        })
-      } catch (error) {
-        res.status(503).json({
-            error: "Polar authentication failed",
-        });
-        throw error;
-      }
+    const successUrl = `${env.FRONTEND_URL}/checkout/return?checkout_id={CHECKOUT_ID}`;
+    const returnUrl = `${env.FRONTEND_URL}/cart`;
 
-      res.json({checkoutUrl:checkout.url})
+    let checkout;
+    try {
+      checkout = await polarCreateCheckout(env, {
+        products: [env.POLAR_CHECKOUT_PRODUCT_ID],
+        prices: {
+          [env.POLAR_CHECKOUT_PRODUCT_ID]: [
+            {
+              amount_type: "fixed",
+              price_currency: "inr",
+              price_amount: totalCents,
+            },
+          ],
+        },
+        success_url: successUrl,
+        return_url: returnUrl,
+        external_customer_id: userId,
+        metadata: { checkout_session_id: session.id },
+      });
+    } catch (error) {
+      console.error("Polar checkout creation failed:", error);
+      res.status(502).json({
+        error: "Checkout provider rejected the request. Please try again.",
+      });
+      return;
+    }
 
-      await db.update(checkoutSessions).set({polarCheckoutId: checkout.id}).where(eq(checkoutSessions.id,session.id))
+    res.json({ checkoutUrl: checkout.url });
 
-   } catch (error) {
-      console.error("Checkout creation failed:", error)
-      next(error)
-   }     
+    await db
+      .update(checkoutSessions)
+      .set({ polarCheckoutId: checkout.id })
+      .where(eq(checkoutSessions.id, session.id));
+  } catch (error) {
+    console.error("Checkout creation failed:", error);
+    next(error);
+  }
 }
-
