@@ -2,14 +2,13 @@ import type { Request, Response, NextFunction } from "express";
 import { getEnv } from "../lib/env.js";
 import z from "zod";
 import { getAuth } from "@clerk/express";
-import { getLocalUser } from "../db/user.js";
-import { db } from "../db/index.js";
+import { getLocalUser } from "../lib/users.js";
 import { CheckoutSessionLine, checkoutSessions, products } from "../db/schema.js";
 import { and, eq, inArray } from "drizzle-orm";
 import { polarCreateCheckout } from "../lib/polar.js";
+import { db } from "../db/index.js";
 
 const env = getEnv();
-const MIN_CHECKOUT_AMOUNT_CENTS = 6000;
 
 const cartSchema = z.object({
   items: z
@@ -22,9 +21,10 @@ const cartSchema = z.object({
     .min(1),
 });
 
-export async function createCheckOut(req: Request, res: Response, next: NextFunction) {
+export async function createCheckout(req: Request, res: Response, next: NextFunction) {
   try {
-    const { isAuthenticated, userId } = getAuth(req);
+    // only signed-in users can start checkout
+    const { userId, isAuthenticated } = getAuth(req);
     if (!isAuthenticated || !userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -36,20 +36,21 @@ export async function createCheckOut(req: Request, res: Response, next: NextFunc
       return;
     }
 
+    // polar access token is required
     if (!env.POLAR_ACCESS_TOKEN) {
       res.status(503).json({ error: "Payments are not configured" });
       return;
     }
 
     const localUser = await getLocalUser(userId);
-
     if (!localUser) {
-      res.status(503).json({ error: "Account is not synced yet" });
+      res.status(503).json({ error: "Account not synced yet" });
       return;
     }
 
     const ids = parsed.data.items.map((i) => i.productId);
 
+    // load every cart product that exists, is active, and matches the IDs we asked for.
     const prodRows = await db
       .select()
       .from(products)
@@ -74,9 +75,9 @@ export async function createCheckOut(req: Request, res: Response, next: NextFunc
       });
     }
 
-    if (totalCents < MIN_CHECKOUT_AMOUNT_CENTS) {
+    if (totalCents < 10) {
       res.status(400).json({
-        error: "Cart total must be at least INR 60.00 to checkout.",
+        error: "Total below Polar minimum (e.g. USD requires at least 10 cents)",
       });
       return;
     }
@@ -87,47 +88,39 @@ export async function createCheckOut(req: Request, res: Response, next: NextFunc
         userId: localUser.id,
         lines,
         totalCents,
-        currency: "INR",
+        currency: "inr",
       })
       .returning();
 
     const successUrl = `${env.FRONTEND_URL}/checkout/return?checkout_id={CHECKOUT_ID}`;
     const returnUrl = `${env.FRONTEND_URL}/cart`;
 
-    let checkout;
-    try {
-      checkout = await polarCreateCheckout(env, {
-        products: [env.POLAR_CHECKOUT_PRODUCT_ID],
-        prices: {
-          [env.POLAR_CHECKOUT_PRODUCT_ID]: [
-            {
-              amount_type: "fixed",
-              price_currency: "inr",
-              price_amount: totalCents,
-            },
-          ],
-        },
-        success_url: successUrl,
-        return_url: returnUrl,
-        external_customer_id: userId,
-        metadata: { checkout_session_id: session.id },
-      });
-    } catch (error) {
-      console.error("Polar checkout creation failed:", error);
-      res.status(502).json({
-        error: "Checkout provider rejected the request. Please try again.",
-      });
-      return;
-    }
+    const checkout = await polarCreateCheckout(env, {
+      products: [env.POLAR_CHECKOUT_PRODUCT_ID],
+      prices: {
+        [env.POLAR_CHECKOUT_PRODUCT_ID]: [
+          {
+            amount_type: "fixed",
+            price_currency: "inr",
+            price_amount: totalCents,
+          },
+        ],
+      },
 
-    res.json({ checkoutUrl: checkout.url });
+      success_url: successUrl,
+      return_url: returnUrl,
+      external_customer_id: userId,
+      metadata: { checkout_session_id: session.id },
+    });
 
     await db
       .update(checkoutSessions)
       .set({ polarCheckoutId: checkout.id })
       .where(eq(checkoutSessions.id, session.id));
-  } catch (error) {
-    console.error("Checkout creation failed:", error);
-    next(error);
+
+    res.json({ checkoutUrl: checkout.url });
+  } catch (e) {
+    console.error(e)
+    next(e);
   }
 }

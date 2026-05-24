@@ -51,6 +51,7 @@ export const checkoutSessions = pgTable("checkout_sessions", {
 export const orders = pgTable("orders",{
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(()=> users.id,{onDelete: "cascade"}),
+  checkoutSessionId: uuid("checkout_session_id").unique(),
   status: text("status").$type<OrderStatus>().notNull().default("pending"),
   polarCheckoutId: text("polar_checkout_id").unique(),
   polarOrderid: text("polar_order_id").unique(),
