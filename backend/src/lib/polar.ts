@@ -19,7 +19,16 @@ type CheckoutCreateBody = {
 
 export async function polarCreateCheckout(env: Env, body: CheckoutCreateBody) {
   const token = env.POLAR_ACCESS_TOKEN;
-  if (!token) throw new Error("POLAR_ACCESS_TOKEN is not configured");
+
+  if (!token) {
+    throw new Error("POLAR_ACCESS_TOKEN is not configured");
+  }
+
+  console.log({
+    api: env.POLAR_API_BASE,
+    tokenStart: token.slice(0, 15),
+    productId: body.products[0],
+  });
 
   const res = await fetch(`${env.POLAR_API_BASE}/v1/checkouts/`, {
     method: "POST",
@@ -29,12 +38,19 @@ export async function polarCreateCheckout(env: Env, body: CheckoutCreateBody) {
     },
     body: JSON.stringify(body),
   });
- 
+
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Polar checkout failed: ${res.status} ${errText}`);
   }
 
-  const data = (await res.json()) as { id: string; url: string };
-  return { id: data.id, url: data.url };
+  const data = (await res.json()) as {
+    id: string;
+    url: string;
+  };
+
+  return {
+    id: data.id,
+    url: data.url,
+  };
 }

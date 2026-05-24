@@ -8,6 +8,5 @@ export function SentryUserSync(){
     if(!isLoaded) return;
        Sentry.setUser(userId ? {id: userId} : null)
     },[isLoaded,userId])
-
     return null;
 }

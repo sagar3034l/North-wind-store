@@ -17,7 +17,7 @@ const Navbar = () => {
   const role = meData?.user?.role
 
 
-  const cartCount = userCart(s => s.items.reduce((n,line) => n +line.quantity ,0));
+  const cartCount = userCart((s) => (s?.items ?? []).reduce((n, line) => n + line.quantity, 0));
   // todo handle cart count
 
   return (

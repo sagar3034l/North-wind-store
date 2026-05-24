@@ -59,7 +59,7 @@ async function fulfillCheckoutSession(
         status: "paid",
         totalCents: session.totalCents,
         polarCheckoutId: checkoutId ?? session.polarCheckoutId ?? null,
-        ...(polarOrderId ? { polarOrderId } : {}),
+        polarOrderid: polarOrderId ?? null,
       })
       .returning();
 
@@ -90,7 +90,7 @@ export async function polarWebhookHandler(req:Request,res:Response) {
             return;
         }
         const rawData = req.body instanceof Buffer ? req.body : Buffer.from(String(req.body))
-        const wh = new Webhook(Buffer.from(env.POLAR_WEBHOOK_SECRET,"utf-8").toString("base64"));
+        const wh = new Webhook(env.POLAR_WEBHOOK_SECRET);
         
         const id = headerString(req.headers,"webhook-id");
         const ts = headerString(req.headers,"webhook-timestamp")
@@ -146,6 +146,7 @@ export async function polarWebhookHandler(req:Request,res:Response) {
 
         res.json({ok:true})
     } catch (error) {
+        console.error("Polar webhook failed:", error);
         res.status(400).json({error:"Invalid webhook"})
     }
 }

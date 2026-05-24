@@ -6,7 +6,7 @@ import { getLocalUser } from "../db/user.js";
 import { db } from "../db/index.js";
 import { CheckoutSessionLine, checkoutSessions, products } from "../db/schema.js";
 import { and, eq, inArray } from "drizzle-orm";
-import { polarCreateCheckout } from "../lib/polar.js";
+import {polarCreateCheckout } from "../lib/polar.js";
 
 const env = getEnv();
 
@@ -88,29 +88,38 @@ export async function createCheckOut(req:Request,res:Response,next:NextFunction)
       const successUrl = `${env.FRONTEND_URL}/checkout/return?checkout_id={CHECKOUT_ID}`
       const returnUrl = `${env.FRONTEND_URL}/cart`;
       
-      const checkout = await polarCreateCheckout(env, {
-        products: [env.POLAR_CHECKOUT_PRODUCT_ID],
-        prices: {
-          [env.POLAR_CHECKOUT_PRODUCT_ID]:[
-            {
-              amount_type: "fixed",
-              price_currency: "INR",
-              price_amount: totalCents
-            }
-          ]
-        },
-        success_url: successUrl,
-        return_url: returnUrl,
-        external_customer_id: userId,
-        metadata: {checkout_session_id: session.id}
-      })
+      let checkout;
+      try {
+        checkout = await polarCreateCheckout(env, {
+          products: [env.POLAR_CHECKOUT_PRODUCT_ID],
+          prices: {
+            [env.POLAR_CHECKOUT_PRODUCT_ID]:[
+              {
+                amount_type: "fixed",
+                price_currency: "inr",
+                price_amount: totalCents
+              }
+            ]
+          },
+          success_url: successUrl,
+          return_url: returnUrl,
+          external_customer_id: userId,
+          metadata: {checkout_session_id: session.id}
+        })
+      } catch (error) {
+        res.status(503).json({
+            error: "Polar authentication failed",
+        });
+        throw error;
+      }
+
       res.json({checkoutUrl:checkout.url})
 
       await db.update(checkoutSessions).set({polarCheckoutId: checkout.id}).where(eq(checkoutSessions.id,session.id))
 
    } catch (error) {
-      console.error(error)
-      res.status(401).json({error:"Internal server error"})
+      console.error("Checkout creation failed:", error)
+      next(error)
    }     
 }
 

@@ -17,6 +17,7 @@ import * as Sentry from "@sentry/node";
 import { polarWebhookHandler } from './webhooks/polar.js';
 import { sentryClerkUserMiddleware } from './middleware/sentryClerkUser.js';
 import adminRouter from "./routes/adminRouter.js"
+import { ensureCheckoutSessionsTable } from "./db/bootstrap.js";
 
 const app = express();
 
@@ -78,6 +79,17 @@ app.use((_err:unknown,_req:Request,res:Response,_next:NextFunction)=>{
      })
 })
 
-app.listen(env.PORT,()=>{
-     console.log("Server is listening on",env.PORT)
-})
+async function startServer() {
+     try {
+          await ensureCheckoutSessionsTable();
+     } catch (error) {
+          console.error("Database bootstrap failed:", error);
+          process.exit(1);
+     }
+
+     app.listen(env.PORT,()=>{
+          console.log("Server is listening on",env.PORT)
+     })
+}
+
+void startServer();
