@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { ProductPageSkeleton } from "../components/LoadingSkeleton";
 import { PageError } from "../components/PageError";
-import { useProductsPage } from "../hooks/useProductPage";
+import { useProductsPage } from "../Hooks/useProductPage";
 import { IK_PRESETS, imageKitOptimizedUrl, imageKitWatermarkedUrl } from "../lib/imageKitUrl";
 import { useCart } from "../store/cart";
 import { ArrowLeftIcon, CheckIcon, ExternalLinkIcon, ShoppingCartIcon } from "lucide-react";
