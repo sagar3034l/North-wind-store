@@ -83,7 +83,7 @@ async function fulfillCheckoutSession(
 
 export async function polarWebhookHandler(req:Request,res:Response) {
     const env = getEnv();
-    console.log(env.POLAR_WEBHOOK_SECRET)
+    console.log("Is body a buffer?", req.body instanceof Buffer);
     try {
         if(!env.POLAR_WEBHOOK_SECRET){
             res.status(503).send("Polar webhooks not configured")
