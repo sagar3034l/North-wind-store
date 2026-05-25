@@ -30,6 +30,7 @@ app.post("/webhooks/clerk",rawJson,(req,res)=>{
 })
 
 app.post("/webhooks/polar",rawJson,(req,res)=>{
+     console.log("Hello",rawJson)
      void polarWebhookHandler(req,res)
 })
 

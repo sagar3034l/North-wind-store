@@ -82,10 +82,6 @@ async function fulfillCheckoutSession(
 
 
 export async function polarWebhookHandler(req:Request,res:Response) {
-    console.log("========== WEBHOOK HIT ==========");
-    console.log("HEADERS:", req.headers);
-    console.log("BODY IS BUFFER:", Buffer.isBuffer(req.body));
-
     const env = getEnv();
     console.log(env.POLAR_WEBHOOK_SECRET)
     try {
@@ -95,8 +91,8 @@ export async function polarWebhookHandler(req:Request,res:Response) {
         }
 
         const rawData = req.body instanceof Buffer ? req.body : Buffer.from(String(req.body))
-        console.log("hello")
-        const wh = new Webhook(env.POLAR_WEBHOOK_SECRET);
+
+        const wh = new Webhook(Buffer.from(env.POLAR_WEBHOOK_SECRET,"utf-8").toString("base64"));
         
         const id = headerString(req.headers,"webhook-id");
         const ts = headerString(req.headers,"webhook-timestamp")
