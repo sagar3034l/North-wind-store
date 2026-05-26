@@ -8,6 +8,10 @@ import CheckoutReturnPage from './pages/CheckoutReturn';
 // import OrderDetailPage from './pages/OrderDetailPage';
 import OrdersPage from './pages/OrdersPage';
 import ProductDetail from './pages/ProductDetail'
+import { SentryDemoPage } from './pages/SentryDemoPage';
+import OrderDetailPage from './pages/OrderDetailPage';
+import OrderChatPage from './pages/OrderChatPage';
+import OrderSummaryPage from './pages/OrderSummaryPage';
 
 
 
@@ -23,9 +27,14 @@ function App() {
           <Route path='/orders' element={<OrdersPage />}/>
           <Route path="/checkout/return" element={<CheckoutReturnPage />} />
           <Route path="/product/:slug" element={<ProductDetail />} />
+          <Route path='/demo/sentry' element={<SentryDemoPage />}/>
+          <Route path='/orders/:id' element={<OrderDetailPage />}>
+              <Route index element={<OrderSummaryPage />}/>
+              <Route path='chat' element={<OrderChatPage />}/>
+          </Route>
       </Routes>
     </Layout>
-  )
+  ) 
 }
 
 export default App
