@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/react'
 import PageLoader from './components/PageLoader';
 import Layout from './components/Layout';
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 import Homepage from './pages/Homepage';
 import CartPage from './pages/CartPage'
 import CheckoutReturnPage from './pages/CheckoutReturn';
@@ -12,11 +12,12 @@ import { SentryDemoPage } from './pages/SentryDemoPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import OrderChatPage from './pages/OrderChatPage';
 import OrderSummaryPage from './pages/OrderSummaryPage';
+import OrderVideoPage from './pages/OrderVideoPage';
 
 
 
 function App() {
-  const {isLoaded} = useAuth();
+  const {isLoaded,isSignedIn} = useAuth();
 
   if(!isLoaded) return <PageLoader />
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path='/demo/sentry' element={<SentryDemoPage />}/>
           <Route path='/orders/:id' element={<OrderDetailPage />}>
+          <Route path='/orders/:id/call' element={isSignedIn ? <OrderVideoPage /> : <Navigate to={"/"} replace/>}/>
               <Route index element={<OrderSummaryPage />}/>
               <Route path='chat' element={<OrderChatPage />}/>
           </Route>
