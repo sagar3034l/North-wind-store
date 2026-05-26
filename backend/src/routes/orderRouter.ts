@@ -1,5 +1,5 @@
 import Router from 'express'
-import { createStreamChannel, createVideoInvite, getOrder, listOrders } from '../controller/orderController.js';
+import {createStreamChannel, createVideoInvite, getOrder, listOrders } from '../controller/orderController.js';
 const router = Router();
 
 router.get("/",listOrders)
