@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { uploadImageToImageKit } from "../lib/imagekitUpload.js";
+import { uploadImageToImageKit } from "../lib/imageKitUpload.js";
 import { IK_PRESETS, imageKitOptimizedUrl } from "../lib/imageKitUrl.js";
 
 export function AdminProductForm({ initial, saving, error, getToken, onCancel, onSubmit }) {
