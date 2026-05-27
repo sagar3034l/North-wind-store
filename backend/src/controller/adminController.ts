@@ -78,7 +78,7 @@ export const getImagekitAuth = async (req:Request,res:Response,next:NextFunction
 
         res.json({
             ...auth,
-            publicKkey:env.IMAGEKIT_PUBLIC_KEY,
+            publicKey: env.IMAGEKIT_PUBLIC_KEY,
             urlEndpoint: env.IMAGEKIT_URL_ENDPOINT
         })
     } catch (error) {
@@ -89,6 +89,7 @@ export const getImagekitAuth = async (req:Request,res:Response,next:NextFunction
 export const listAdminProducts = async (req:Request,res:Response,next:NextFunction) => {
     try {
         const rows = await db.select().from(products).orderBy(desc(products.createdAt));
+
         res.json({products: rows})
     } catch (e) {
         next(e)
@@ -140,6 +141,8 @@ export const updateAdminProduct = async (req: Request, res: Response, next: Next
             res.status(404).json({error:"Not found"})
             return;
         }
+
+        res.json({ product: row });
 
     } catch (error) {
         next(error)

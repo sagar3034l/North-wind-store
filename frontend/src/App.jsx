@@ -13,6 +13,7 @@ import OrderDetailPage from './pages/OrderDetailPage';
 import OrderChatPage from './pages/OrderChatPage';
 import OrderSummaryPage from './pages/OrderSummaryPage';
 import OrderVideoPage from './pages/OrderVideoPage';
+import AdminProductsPage from './pages/AdminProductsPage';
 
 
 
@@ -34,6 +35,7 @@ function App() {
               <Route index element={<OrderSummaryPage />}/>
               <Route path='chat' element={<OrderChatPage />}/>
           </Route>
+          <Route path='/admin' element={isSignedIn ? <AdminProductsPage /> : <Navigate to={"/"} />} />
       </Routes>
     </Layout>
   ) 
